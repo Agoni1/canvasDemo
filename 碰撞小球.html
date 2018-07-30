@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>碰撞小球</title>
+  <style>
+    #canvas {
+      border: 1px solid #111;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <script>
+    let canvas = document.getElementById('canvas')
+    let ctx = canvas.getContext('2d')
+
+    let canvas_w = canvas.width
+    let canvas_h = canvas.height
+
+    class Circle {
+      constructor(ctx, radius, x = 0, y = 0) {
+        this.radius = radius
+        this.mass = this.radius
+        this.x = x
+        this.y = y
+        this.vx = Math.random() * 4 - 2
+        this.vy = Math.random() * 4 - 2
+        this.colorArr = ['#cbe107', '#e19207', '#f33b20', '#4358dd', '#9943dd', '#b18bce', '#bc27a4', '#19a135']
+        this.color = this.colorArr[Math.floor(Math.random() * this.colorArr.length)]
+      }
+      draw() {
+        this.x += this.vx
+        this.y += this.vy
+        ctx.save()
+        ctx.fillStyle = this.color
+        ctx.beginPath()
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.closePath()
+        ctx.restore()
+      }
+      // 边界检测
+      boundaryCheck(max_x, max_y, min_x = 0, min_y = 0) {
+        if (this.x - this.radius <= min_x || this.x + this.radius >= max_x) {
+          this.vx = -this.vx
+        }
+        if (this.y - this.radius <= min_y || this.y + this.radius >= max_y) {
+          this.vy = -this.vy
+        }
+      }
+      // 碰撞检测
+      crashCheck(target) {
+        let dx = this.x - target.x
+        let dy = this.y - target.y
+        let sumR = this.radius + target.radius
+        if (Math.pow(dx, 2) + Math.pow(dy, 2) <= Math.pow(sumR, 2)) {
+          let sumVx = this.vx - target.vx
+          this.vx = ((this.mass - target.mass) * this.vx + 2 * target.mass * target.vx) / (this.mass + target.mass)
+          target.vx = sumVx + this.vx
+          let sumVy = this.vy - target.vy
+          this.vy = ((this.mass - target.mass) * this.vy + 2 * target.mass * target.vy) / (this.mass + target.mass)
+          target.vy = sumVy + this.vy
+        }
+      }
+    }
+
+    function createBalls(num) {
+      let balls = []
+      while (balls.length < num) {
+        let r = Math.random() * 5 + 5
+        let x = Math.random() * (canvas_w - 2 * r) + r
+        let y = Math.random() * (canvas_h - 2 * r) + r
+        // 判断是否跟已有的球位置重叠
+        let overlap = balls.find(ball => {
+          let dx = ball.x - x
+          let dy = ball.y - y
+          let sumR = ball.radius + r
+          if (Math.pow(dx, 2) + Math.pow(dy, 2) <= Math.pow(sumR, 2)) {
+            return true
+          }
+        })
+        if (!overlap) {
+          let newBall = new Circle(ctx, r, x, y)
+          balls.push(newBall)
+        }
+      }
+      return balls
+    }
+
+    let balls = createBalls(30)
+
+    function animation() {
+      ctx.clearRect(0, 0, canvas_w, canvas_h)
+      balls.forEach((ball, i) => {
+        for (let j = i + 1; j < balls.length; j++) {
+          let target = balls[j]
+          ball.crashCheck(target)
+        }
+        ball.boundaryCheck(canvas_w, canvas_h)
+        // 绘制
+        ball.draw()
+      })
+      window.requestAnimationFrame(() => {
+        animation()
+      })
+    }
+
+    window.requestAnimationFrame(() => {
+      animation()
+    })
+  </script>
+</body>
+
+</html>
